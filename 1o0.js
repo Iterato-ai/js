@@ -967,7 +967,24 @@ const IteratoService = (function () {
 
     // Function to get domain
     const getDomain = function () {
-        return window.location.hostname;
+        const hostname = window.location.hostname;
+        const parts = hostname.split('.');
+    
+        // Handle localhost and IPs
+        if (parts.length < 2 || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname === 'localhost') {
+            return hostname;
+        }
+    
+        // Known public suffixes (extendable)
+        const publicSuffixes = ['co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'com.au', 'net.au'];
+        const lastTwo = parts.slice(-2).join('.');
+        const lastThree = parts.slice(-3).join('.');
+    
+        if (publicSuffixes.includes(lastTwo)) {
+            return lastThree;
+        }
+    
+        return lastTwo;
     };
 
     // Function to send feedback to API
