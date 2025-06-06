@@ -1285,11 +1285,91 @@ const IteratoService = (function () {
         }
     };
 
+    // Function to generate or retrieve a unique user ID
+    const getUserId = function() {
+        let userId = localStorage.getItem('iterato_user_id');
+        if (!userId) {
+            // Generate a simple fingerprint based on browser properties
+            const fingerprint = [
+                navigator.userAgent,
+                navigator.language,
+                screen.colorDepth,
+                screen.width + 'x' + screen.height,
+                new Date().getTimezoneOffset(),
+                navigator.platform
+            ].join('|');
+            
+            // Create a hash of the fingerprint
+            let hash = 0;
+            for (let i = 0; i < fingerprint.length; i++) {
+                const char = fingerprint.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            
+            userId = 'uid_' + Math.abs(hash).toString(16) + Date.now().toString(16);
+            localStorage.setItem('iterato_user_id', userId);
+        }
+        return userId;
+    };
+
+    // Function to push page view data to the API
+    const pushPV = function() {
+        try {
+            // Get domain using existing function
+            const domain = getDomain();
+            
+            // Get path (everything after the domain in the URL)
+            const path = window.location.pathname + window.location.search + window.location.hash;
+            
+            // Get referrer
+            const referrer = document.referrer || '';
+            
+            // Get or create user ID
+            const userId = getUserId();
+            
+            // Prepare payload
+            const payload = {
+                domain: domain,
+                path: path,
+                referrer: referrer,
+                user_id: userId
+            };
+            
+            // Send to API
+            fetch('https://iterato-api.unlink-at.workers.dev/pushPV', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Page view data sent successfully');
+                } else {
+                    console.log('Failed to send page view data');
+                }
+            })
+            .catch(error => {
+                console.log('Error sending page view data:', error);
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('Error in pushPV function:', error);
+            return false;
+        }
+    };
+
     // Expose the new function along with the existing ones
     return {
         collect: collect,
         showToast: showToast,
         init: init,
-        setUser: setUser
+        setUser: setUser,
+        pushPV: pushPV
     };
 })();
+
+IteratoService.pushPV();
