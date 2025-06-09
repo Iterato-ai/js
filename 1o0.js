@@ -3,6 +3,10 @@ const IteratoService = (function () {
     let feedbackId = '';
     let chatHistory = [];
     let fdbk_tags = [];
+    let msg_first_toast = "How was your experience?";
+    let msg_2nd_toast = "We will try to do better! Would you like to share more feedback?"
+    let ask_if_positive = false;
+    let ask_if_negetive = true;
 
 
     const createToastStyles = function () {
@@ -242,7 +246,7 @@ const IteratoService = (function () {
 
             const yesButton = document.createElement('button');
             yesButton.className = 'toast-feedback-button primary';
-            yesButton.textContent = 'Yes!';
+            yesButton.textContent = 'Yes';
             yesButton.style.backgroundColor = '#ededed';
             yesButton.style.border = 'none';
             yesButton.style.color = '#111';
@@ -364,8 +368,13 @@ const IteratoService = (function () {
                         // Check if response is successful
                         if (response && response.statusCode === 200 && response.result === true) {
                             console.log('Feedback sent successfully, Showing next feedback options');
+                            if(ask_if_negetive){
+                                showFeedbackOptionsToast();
+
+                            }else{
+                                showNextToast('Thanks for your feedback!');
+                            }
                             // Show feedback options toast
-                            showFeedbackOptionsToast();
                         } else {
                             console.log('Dislike! Unsuccess');
                             // Show generic thanks toast
@@ -398,8 +407,12 @@ const IteratoService = (function () {
                             // Show thanks toast
                             console.log('Feedback sent successfully, Showing next feedback options');
 
-                            showNextToast('Thanks for the feedback!');
-                        } else {
+                            if(ask_if_positive){
+                                showFeedbackOptionsToast();
+
+                            }else{
+                                showNextToast('Thanks for the positive feedback!');
+                            }                        } else {
                             // Show generic thanks toast
                             console.log('Like! Unsuccess');
 
@@ -442,7 +455,7 @@ const IteratoService = (function () {
 
             // Create new toast immediately
             const feedbackOptionsToastId = 'feedback-options-toast-' + Date.now();
-            const newToast = createToast(feedbackOptionsToastId, 'We will try to do better! Would you like to share more feedback?', false, false);
+            const newToast = createToast(feedbackOptionsToastId, msg_2nd_toast, false, false);
 
             newToast.appendChild(document.createElement('br'));
 
@@ -969,21 +982,21 @@ const IteratoService = (function () {
     const getDomain = function () {
         const hostname = window.location.hostname;
         const parts = hostname.split('.');
-    
+
         // Handle localhost and IPs
         if (parts.length < 2 || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname === 'localhost') {
             return hostname;
         }
-    
+
         // Known public suffixes (extendable)
         const publicSuffixes = ['co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'com.au', 'net.au'];
         const lastTwo = parts.slice(-2).join('.');
         const lastThree = parts.slice(-3).join('.');
-    
+
         if (publicSuffixes.includes(lastTwo)) {
             return lastThree;
         }
-    
+
         return lastTwo;
     };
 
@@ -1074,8 +1087,6 @@ const IteratoService = (function () {
                 language: navigator.language,
                 cookies_enabled: navigator.cookieEnabled,
                 online_status: navigator.onLine,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                timezone_offset: new Date().getTimezoneOffset() + " mins",
                 browser_name: (function () {
                     const ua = navigator.userAgent;
                     if (ua.indexOf("Firefox") > -1) return "Firefox";
@@ -1092,10 +1103,9 @@ const IteratoService = (function () {
                     (navigator.connection || navigator.mozConnection || navigator.webkitConnection).effectiveType : "unknown"
             };
         } catch (error) {
-            console.error('Error creating browser details object:', error);
+            console.log('Error creating browser details object:', error);
             window.it_browser_details = { error: 'Failed to collect browser details' };
         }
-        console.log(project_id);
         if (!project_id) {
             // Return a rejected promise if project_id is missing
             return Promise.resolve(false);
@@ -1103,7 +1113,6 @@ const IteratoService = (function () {
 
         // Get the current domain
         const domain = window.location.hostname;
-        console.log('Domain:', domain); // Log the domain
 
         // Return the fetch promise chain
         return fetch('https://iterato-api.unlink-at.workers.dev/verifyProject', {
@@ -1126,19 +1135,19 @@ const IteratoService = (function () {
                         console.log('IteratoService initialized successfully');
                         return true; // Resolve promise with true
                     } else {
-                        console.error('Project validation failed:', { statusCode, data });
+                        console.log('Project validation failed:', { statusCode, data });
                         window._iteratoInitialized = false; // Ensure state is false on failure
                         return false; // Resolve promise with false
                     }
                 }).catch(error => {
-                    console.error('Error parsing validation response:', error);
-                    console.error('Project validation failed due to JSON parsing error:', { statusCode });
+                    console.log('Error parsing validation response:', error);
+                    console.log('Project validation failed due to JSON parsing error:', { statusCode });
                     window._iteratoInitialized = false;
                     return false; // Resolve promise with false on JSON error
                 });
             })
             .catch(error => {
-                console.error('Error validating project (fetch failed):', error);
+                console.log('Error validating project (fetch failed):', error);
                 window._iteratoInitialized = false;
                 return false; // Resolve promise with false on fetch error
             });
@@ -1174,8 +1183,7 @@ const IteratoService = (function () {
 
         return true;
     };
-
-    const collect = function (event_id, tags) {
+    const collect = function (event_id, toast_config = {}) {
         if (!event_id) {
             console.error('IteratoService: Event ID is required for collect function');
             return false;
@@ -1185,24 +1193,60 @@ const IteratoService = (function () {
             console.error('IteratoService: Service not initialized. Please call init() first');
             return false;
         }
+        
+        // Reset tags array
         fdbk_tags = [];
-
-        // Process tags if provided
-        if (tags) {
-            if (typeof tags === 'string') {
-                // If tags is a string, add it directly
-                fdbk_tags.push(tags);
-            } else if (Array.isArray(tags)) {
-                // If tags is an array, add all elements
-                fdbk_tags = fdbk_tags.concat(tags);
-            } else if (typeof tags === 'object') {
-                // If tags is an object, add all values
-                Object.values(tags).forEach(tag => fdbk_tags.push(tag));
-            } else {
-                console.error('IteratoService: Tags are in unsupported format');
+        
+        // Process toast configuration if provided
+        if (toast_config && typeof toast_config === 'object') {
+            // Process tags if provided
+            if ('tags' in toast_config) {
+                if (Array.isArray(toast_config.tags)) {
+                    // Filter out non-string values
+                    fdbk_tags = toast_config.tags.filter(tag => typeof tag === 'string');
+                } else {
+                    console.warn('IteratoService: tags should be an array of strings, ignoring invalid format');
+                }
             }
+            
+            // Process followup_if_positive if provided
+            if ('followup_if_positive' in toast_config) {
+                if (typeof toast_config.followup_if_positive === 'boolean') {
+                    ask_if_positive = toast_config.followup_if_positive;
+                } else {
+                    console.warn('IteratoService: followup_if_positive should be a boolean, ignoring invalid value');
+                }
+            }
+            
+            // Process followup_if_negative if provided
+            if ('followup_if_negative' in toast_config) {
+                if (typeof toast_config.followup_if_negative === 'boolean') {
+                    ask_if_negetive = toast_config.followup_if_negative;
+                } else {
+                    console.warn('IteratoService: followup_if_negative should be a boolean, ignoring invalid value');
+                }
+            }
+            
+            // Process initial_prompt if provided
+            if ('initial_prompt' in toast_config) {
+                if (typeof toast_config.initial_prompt === 'string') {
+                    msg_first_toast = toast_config.initial_prompt;
+                } else {
+                    console.warn('IteratoService: initial_prompt should be a string, ignoring invalid value');
+                }
+            }
+            
+            // Process followup_prompt if provided
+            if ('followup_prompt' in toast_config) {
+                if (typeof toast_config.followup_prompt === 'string') {
+                    msg_2nd_toast = toast_config.followup_prompt;
+                } else {
+                    console.warn('IteratoService: followup_prompt should be a string, ignoring invalid value');
+                }
+            }
+            
+            // Any other properties in toast_config are simply ignored
         }
-
 
         // Generate a new feedback ID for this feedback session
         feedbackId = generateFeedbackId();
@@ -1239,7 +1283,7 @@ const IteratoService = (function () {
                     });
 
                     const firstToastId = 'first-toast-' + Date.now();
-                    createToast(firstToastId, 'How was your experience?', true);
+                    createToast(firstToastId, msg_first_toast, true);
                     showToast(firstToastId);
                     if (typeof mixpanel !== 'undefined') {
                         mixpanel.track('Toast-1 displayed (2)');
@@ -1269,7 +1313,10 @@ const IteratoService = (function () {
     };
 
     const setUser = function (userinfo) {
-        if (typeof userinfo === 'object' && userinfo !== null) {
+        if (userinfo &&
+            typeof userinfo === 'object' &&
+            !Array.isArray(userinfo)
+        ) {
             try {
                 // Store the user info object in the window object
                 window.it_setUserInfo = userinfo;
@@ -1286,7 +1333,7 @@ const IteratoService = (function () {
     };
 
     // Function to generate or retrieve a unique user ID
-    const getUserId = function() {
+    const getUserId = function () {
         let userId = localStorage.getItem('iterato_user_id');
         if (!userId) {
             // Generate a simple fingerprint based on browser properties
@@ -1298,7 +1345,7 @@ const IteratoService = (function () {
                 new Date().getTimezoneOffset(),
                 navigator.platform
             ].join('|');
-            
+
             // Create a hash of the fingerprint
             let hash = 0;
             for (let i = 0; i < fingerprint.length; i++) {
@@ -1306,7 +1353,7 @@ const IteratoService = (function () {
                 hash = ((hash << 5) - hash) + char;
                 hash = hash & hash; // Convert to 32bit integer
             }
-            
+
             userId = 'uid_' + Math.abs(hash).toString(16) + Date.now().toString(16);
             localStorage.setItem('iterato_user_id', userId);
         }
@@ -1314,20 +1361,20 @@ const IteratoService = (function () {
     };
 
     // Function to push page view data to the API
-    const pushPV = function() {
+    const pushPV = function () {
         try {
             // Get domain using existing function
             const domain = getDomain();
-            
+
             // Get path (everything after the domain in the URL)
             const path = window.location.pathname + window.location.search + window.location.hash;
-            
+
             // Get referrer
             const referrer = document.referrer || '';
-            
+
             // Get or create user ID
             const userId = getUserId();
-            
+
             // Prepare payload
             const payload = {
                 domain: domain,
@@ -1335,7 +1382,7 @@ const IteratoService = (function () {
                 referrer: referrer,
                 user_id: userId
             };
-            
+
             // Send to API
             fetch('https://iterato-api.unlink-at.workers.dev/pushPV', {
                 method: 'POST',
@@ -1344,17 +1391,17 @@ const IteratoService = (function () {
                 },
                 body: JSON.stringify(payload)
             })
-            .then(response => {
-                if (response.ok) {
-                    console.log('Page view data sent successfully');
-                } else {
-                    console.log('Failed to send page view data');
-                }
-            })
-            .catch(error => {
-                console.log('Error sending page view data:', error);
-            });
-            
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Page view data sent successfully');
+                    } else {
+                        console.log('Failed to send page view data');
+                    }
+                })
+                .catch(error => {
+                    console.log('Error sending page view data:', error);
+                });
+
             return true;
         } catch (error) {
             console.error('Error in pushPV function:', error);
