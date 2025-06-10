@@ -24,7 +24,7 @@ const IteratoService = (function () {
                             padding: 16px;
                             border-radius: 8px;
                             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                            z-index: 100;
+                            z-index: 9999;
                             opacity: 0;
                             transition: opacity 0.4s ease-out, bottom 0.4s;
                             max-width: 400px;
@@ -526,7 +526,7 @@ const IteratoService = (function () {
         overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
         overlay.style.backdropFilter = 'blur(3px)';
         overlay.style.WebkitBackdropFilter = 'blur(3px)';
-        overlay.style.zIndex = '98';
+        overlay.style.zIndex = '9998';
         overlay.style.opacity = '0';
         overlay.style.transition = 'opacity 0.3s ease';
         document.body.appendChild(overlay);
@@ -539,7 +539,7 @@ const IteratoService = (function () {
 
         const toast = createToast(feedbackInputToastId, '', false, false, false);
 
-        toast.style.zIndex = '99';
+        toast.style.zIndex = '9999';
 
         const chatContainer = document.createElement('div');
         chatContainer.style.display = 'flex';
