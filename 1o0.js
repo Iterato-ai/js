@@ -8,7 +8,6 @@ const IteratoService = (function () {
     let ask_if_positive = false;
     let ask_if_negetive = true;
 
-
     const createToastStyles = function () {
         const style = document.createElement('style');
         style.textContent = `
