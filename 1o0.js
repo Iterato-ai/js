@@ -24,7 +24,7 @@ const IteratoService = (function () {
                             padding: 16px;
                             border-radius: 8px;
                             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                            z-index: 1000;
+                            z-index: 100;
                             opacity: 0;
                             transition: opacity 0.4s ease-out, bottom 0.4s;
                             max-width: 400px;
@@ -485,7 +485,7 @@ const IteratoService = (function () {
 
             const yesButton = document.createElement('button');
             yesButton.className = 'toast-feedback-button primary';
-            yesButton.textContent = 'Yes!';
+            yesButton.textContent = 'Yes';
             yesButton.style.backgroundColor = '#ededed';
             yesButton.style.border = 'none';
             yesButton.style.color = '#111';
@@ -526,7 +526,7 @@ const IteratoService = (function () {
         overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
         overlay.style.backdropFilter = 'blur(3px)';
         overlay.style.WebkitBackdropFilter = 'blur(3px)';
-        overlay.style.zIndex = '0';
+        overlay.style.zIndex = '98';
         overlay.style.opacity = '0';
         overlay.style.transition = 'opacity 0.3s ease';
         document.body.appendChild(overlay);
@@ -539,7 +539,7 @@ const IteratoService = (function () {
 
         const toast = createToast(feedbackInputToastId, '', false, false, false);
 
-        toast.style.zIndex = '2';
+        toast.style.zIndex = '99';
 
         const chatContainer = document.createElement('div');
         chatContainer.style.display = 'flex';
@@ -1285,10 +1285,6 @@ const IteratoService = (function () {
                     const firstToastId = 'first-toast-' + Date.now();
                     createToast(firstToastId, msg_first_toast, true);
                     showToast(firstToastId);
-                    if (typeof mixpanel !== 'undefined') {
-                        mixpanel.track('Toast-1 displayed (2)');
-                    }
-
                     setTimeout(function () {
                         const toast = document.getElementById(firstToastId);
                         if (toast && toast.parentNode) {
