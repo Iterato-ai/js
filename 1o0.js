@@ -7,6 +7,7 @@ const IteratoService = (function () {
     let msg_2nd_toast = "We will try to do better! Would you like to share more feedback?"
     let ask_if_positive = false;
     let ask_if_negetive = true;
+    let focused_conversation = true;
 
     const createToastStyles = function () {
         const style = document.createElement('style');
@@ -148,32 +149,28 @@ const IteratoService = (function () {
             setTimeout(async () => {
                 if (overlay.parentNode) {
                     overlay.parentNode.removeChild(overlay);
-                    console.log('Overlay removed successfully');
-
-                    try {
-                        console.log('Sending FINAL DATA in api event...');
-                        console.log(chatHistory);
-                        const response = await fetch('https://iterato-api.unlink-at.workers.dev/talkwithAIPM', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                project_id: window._iteratoProjectId,
-                                event_id: window._iteratoEventId,
-                                fdbk_id: feedbackId,
-                                domain: getDomain(),
-                                conversation: chatHistory || [],
-                                need_quest: false,
-                                user_info: window.it_setUserInfo || {}
-                            })
-                        });
-                        const responseData = await response.json();
-                        console.log('API Response:', responseData);
-                    } catch (error) {
-                        console.log('Error sending close event:', error);
-                    }
                 }
+                try {
+                    const response = await fetch('https://iterato-api.unlink-at.workers.dev/talkwithAIPM', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            project_id: window._iteratoProjectId,
+                            event_id: window._iteratoEventId,
+                            fdbk_id: feedbackId,
+                            domain: getDomain(),
+                            conversation: chatHistory || [],
+                            need_quest: false,
+                            user_info: window.it_setUserInfo || {}
+                        })
+                    });
+                    const responseData = await response.json();
+                } catch (error) {
+                    console.log('Error sending close event:', error);
+                }
+
             }, 300);
         }
     };
@@ -366,11 +363,10 @@ const IteratoService = (function () {
                     sendFeedbackToAPI('negative').then(response => {
                         // Check if response is successful
                         if (response && response.statusCode === 200 && response.result === true) {
-                            console.log('Feedback sent successfully, Showing next feedback options');
-                            if(ask_if_negetive){
+                            if (ask_if_negetive) {
                                 showFeedbackOptionsToast();
 
-                            }else{
+                            } else {
                                 showNextToast('Thanks for your feedback!');
                             }
                             // Show feedback options toast
@@ -404,14 +400,13 @@ const IteratoService = (function () {
                         // Check if response is successful
                         if (response && response.statusCode === 200 && response.result === true) {
                             // Show thanks toast
-                            console.log('Feedback sent successfully, Showing next feedback options');
-
-                            if(ask_if_positive){
+                            if (ask_if_positive) {
                                 showFeedbackOptionsToast();
 
-                            }else{
+                            } else {
                                 showNextToast('Thanks for the positive feedback!');
-                            }                        } else {
+                            }
+                        } else {
                             // Show generic thanks toast
                             console.log('Like! Unsuccess');
 
@@ -515,24 +510,28 @@ const IteratoService = (function () {
 
     const showFeedbackInputToast = function () {
 
-        const overlay = document.createElement('div');
-        overlay.id = 'iterato-overlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
-        overlay.style.backdropFilter = 'blur(3px)';
-        overlay.style.WebkitBackdropFilter = 'blur(3px)';
-        overlay.style.zIndex = '9998';
-        overlay.style.opacity = '0';
-        overlay.style.transition = 'opacity 0.3s ease';
-        document.body.appendChild(overlay);
+        if (focused_conversation) {
 
-        setTimeout(() => {
-            overlay.style.opacity = '1';
-        }, 10);
+            const overlay = document.createElement('div');
+            overlay.id = 'iterato-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+            overlay.style.backdropFilter = 'blur(3px)';
+            overlay.style.WebkitBackdropFilter = 'blur(3px)';
+            overlay.style.zIndex = '9998';
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s ease';
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+            }, 10);
+
+        }
 
         const feedbackInputToastId = 'feedback-input-toast-' + Date.now();
 
@@ -578,14 +577,10 @@ const IteratoService = (function () {
                         response: userResponse
                     });
                     questionCounter++; // Only increment counter after user responses
-                    console.log('chatHistory....', chatHistory);
                 }
 
-                console.log('Chat History:', JSON.stringify(chatHistory, null, 2));
-                console.log('Question counter:', questionCounter);
-
                 if (questionCounter >= 3) {
-                    const finalQuestion = "Lastly! Any other insights or suggestions to help us?";
+                    let finalQuestion = "Lastly! Any other insights or suggestions to help us?";
                     if (questionCounter > 3) {
                         finalQuestion = " Thank you for sharing the feedback!";
                     }
@@ -601,7 +596,7 @@ const IteratoService = (function () {
                     };
                 }
 
-                console.log("feedbackId:" + feedbackId);
+                console.log("Collecting Feedback. feedbackId:" + feedbackId);
                 const response = await fetch('https://iterato-api.unlink-at.workers.dev/talkwithAIPM', {
                     method: 'POST',
                     headers: {
@@ -662,8 +657,6 @@ const IteratoService = (function () {
             loadingIndicator.innerHTML = '<span></span><span></span><span></span>';
             loadingIndicator.style.display = 'inline-block';
 
-            console.log('Loading animation created for bot message');
-
             // Add typing indicator styles to the createToastStyles function
             botMessage.appendChild(loadingIndicator);
 
@@ -673,12 +666,10 @@ const IteratoService = (function () {
                 botMessage.style.opacity = '1';
                 botMessage.style.transform = 'translateY(0) scale(1)';
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-                console.log('Bot message with loading animation is now visible');
             }, 100);
 
             // Start typing effect after a small delay
             setTimeout(() => {
-                console.log('Removing loading animation and starting typing effect');
                 loadingIndicator.remove();
                 typeWriter(botMessage, text);
 
@@ -691,7 +682,6 @@ const IteratoService = (function () {
                 setTimeout(() => {
                     clearInterval(scrollInterval);
                     chatContainer.scrollTop = chatContainer.scrollHeight;
-                    console.log('Typing effect completed for message: ' + text.substring(0, 20) + '...');
                 }, text.length * 30 + 100);
             }, 800);
 
@@ -792,7 +782,6 @@ const IteratoService = (function () {
         loadingIndicator.className = 'typing-indicator';
         loadingIndicator.innerHTML = '<span></span><span></span><span></span>';
         firstBotMessage.appendChild(loadingIndicator);
-        console.log('Initial loading animation added to first bot message');
 
         fetchNextQuestion().then(data => {
             if (data.question) {
@@ -895,7 +884,6 @@ const IteratoService = (function () {
         submitButton.onclick = function () {
             const secondAnswer = feedbackInput.value;
             console.log('Second feedback submitted:', secondAnswer);
-            console.log('Complete feedback:', { firstAnswer, secondAnswer });
 
             toast.className = 'toast-notification hide';
             setTimeout(() => {
@@ -1032,7 +1020,6 @@ const IteratoService = (function () {
 
             const statusCode = response.status;
             const data = await response.json();
-            console.log('API response:', data);
             // Return both status code and data
             return {
                 statusCode: statusCode,
@@ -1050,7 +1037,6 @@ const IteratoService = (function () {
     };
 
     const init = function (project_id) {
-        console.log('Initializing IteratoService...');
         createToastStyles();
 
         let viewportMeta = document.querySelector('meta[name="viewport"]');
@@ -1192,10 +1178,10 @@ const IteratoService = (function () {
             console.error('IteratoService: Service not initialized. Please call init() first');
             return false;
         }
-        
+
         // Reset tags array
         fdbk_tags = [];
-        
+
         // Process toast configuration if provided
         if (toast_config && typeof toast_config === 'object') {
             // Process tags if provided
@@ -1207,25 +1193,38 @@ const IteratoService = (function () {
                     console.warn('IteratoService: tags should be an array of strings, ignoring invalid format');
                 }
             }
-            
+
             // Process followup_if_positive if provided
             if ('followup_if_positive' in toast_config) {
                 if (typeof toast_config.followup_if_positive === 'boolean') {
                     ask_if_positive = toast_config.followup_if_positive;
                 } else {
                     console.warn('IteratoService: followup_if_positive should be a boolean, ignoring invalid value');
+                    followup_if_negative = false;
+
                 }
             }
-            
+
             // Process followup_if_negative if provided
             if ('followup_if_negative' in toast_config) {
                 if (typeof toast_config.followup_if_negative === 'boolean') {
                     ask_if_negetive = toast_config.followup_if_negative;
                 } else {
                     console.warn('IteratoService: followup_if_negative should be a boolean, ignoring invalid value');
+                    followup_if_negative = true;
                 }
             }
-            
+
+            // Process followup_if_negative if provided
+            if ('focused_chat' in toast_config) {
+                if (typeof toast_config.focused_chat === 'boolean') {
+                    focused_conversation = toast_config.focused_chat;
+                } else {
+                    console.warn('IteratoService: focused_chat should be a boolean, ignoring invalid value');
+                    focused_conversation = false;
+                }
+            }
+
             // Process initial_prompt if provided
             if ('initial_prompt' in toast_config) {
                 if (typeof toast_config.initial_prompt === 'string') {
@@ -1234,7 +1233,7 @@ const IteratoService = (function () {
                     console.warn('IteratoService: initial_prompt should be a string, ignoring invalid value');
                 }
             }
-            
+
             // Process followup_prompt if provided
             if ('followup_prompt' in toast_config) {
                 if (typeof toast_config.followup_prompt === 'string') {
@@ -1243,13 +1242,12 @@ const IteratoService = (function () {
                     console.warn('IteratoService: followup_prompt should be a string, ignoring invalid value');
                 }
             }
-            
+
             // Any other properties in toast_config are simply ignored
         }
 
         // Generate a new feedback ID for this feedback session
         feedbackId = generateFeedbackId();
-        console.log('Feedback ID:', feedbackId);
         chatHistory = [];
 
         // Store event ID globally
@@ -1272,7 +1270,6 @@ const IteratoService = (function () {
             })
             .then(({ statusCode, data }) => {
                 if (statusCode === 200 && data.result === "TRUE") {
-                    console.log('IteratoService: Event verified successfully');
                     // Proceed with showing the toast - preserving original functionality
                     const existingToasts = document.querySelectorAll('.toast-notification');
                     existingToasts.forEach(toast => {
@@ -1388,7 +1385,7 @@ const IteratoService = (function () {
             })
                 .then(response => {
                     if (response.ok) {
-                        console.log('Page view data sent successfully');
+                        console.log('Pageview Recorded.');
                     } else {
                         console.log('Failed to send page view data');
                     }
@@ -1413,5 +1410,4 @@ const IteratoService = (function () {
         pushPV: pushPV
     };
 })();
-
 IteratoService.pushPV();
