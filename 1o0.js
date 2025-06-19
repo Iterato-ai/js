@@ -8,6 +8,8 @@ const IteratoService = (function () {
     let ask_if_positive = false;
     let ask_if_negetive = true;
     let focused_conversation = true;
+    let questionCounter = 0;
+    let maxQuestions = 3; 
 
     const createToastStyles = function () {
         const style = document.createElement('style');
@@ -297,7 +299,6 @@ const IteratoService = (function () {
 
                 addUserMessage(userResponse);
                 feedbackInput.value = '';
-                questionCount++;
 
                 // Create bot message with loading animation immediately
                 const botMessageElement = addBotMessage("");
@@ -567,7 +568,6 @@ const IteratoService = (function () {
             }
         }
 
-        let questionCounter = 0; // Add a counter to track the number of questions
 
         async function fetchNextQuestion(userResponse) {
             try {
@@ -579,9 +579,9 @@ const IteratoService = (function () {
                     questionCounter++; // Only increment counter after user responses
                 }
 
-                if (questionCounter >= 3) {
+                if (questionCounter >= maxQuestions - 1) {
                     let finalQuestion = "Lastly! Any other insights or suggestions to help us?";
-                    if (questionCounter > 3) {
+                    if (questionCounter > maxQuestions - 1) {
                         finalQuestion = " Thank you for sharing the feedback!";
                     }
 
@@ -592,7 +592,7 @@ const IteratoService = (function () {
 
                     return {
                         question: finalQuestion,
-                        continueChat: questionCounter < 4 // Stop after 4th question (user's 5th response)
+                        continueChat: questionCounter < maxQuestions // Stop after maxQuestions
                     };
                 }
 
@@ -626,7 +626,7 @@ const IteratoService = (function () {
                 // Override the continueChat flag based on our question counter
                 return {
                     ...data,
-                    continueChat: questionCounter < 4
+                    continueChat: questionCounter < maxQuestions
                 };
             } catch (error) {
                 console.error('Error fetching next question:', error);
@@ -1243,12 +1243,18 @@ const IteratoService = (function () {
                 }
             }
 
+            if ('question_count' in toast_config && typeof toast_config.question_count === 'number') {
+                maxQuestions = Math.max(2, Math.min(7, toast_config.question_count));
+                console.log('IteratoService: question_count set to:', maxQuestions);
+            }
+
             // Any other properties in toast_config are simply ignored
         }
 
         // Generate a new feedback ID for this feedback session
         feedbackId = generateFeedbackId();
         chatHistory = [];
+        questionCounter = 0;
 
         // Store event ID globally
         window._iteratoEventId = event_id;
@@ -1357,16 +1363,12 @@ const IteratoService = (function () {
         try {
             // Get domain using existing function
             const domain = getDomain();
-
             // Get path (everything after the domain in the URL)
             const path = window.location.pathname + window.location.search + window.location.hash;
-
             // Get referrer
             const referrer = document.referrer || '';
-
             // Get or create user ID
             const userId = getUserId();
-
             // Prepare payload
             const payload = {
                 domain: domain,
@@ -1374,7 +1376,6 @@ const IteratoService = (function () {
                 referrer: referrer,
                 user_id: userId
             };
-
             // Send to API
             fetch('https://iterato-api.unlink-at.workers.dev/pushPV', {
                 method: 'POST',
@@ -1384,9 +1385,7 @@ const IteratoService = (function () {
                 body: JSON.stringify(payload)
             })
                 .then(response => {
-                    if (response.ok) {
-                        console.log('Pageview Recorded.');
-                    } else {
+                    if (!response.ok) {
                         console.log('Failed to send page view data');
                     }
                 })
