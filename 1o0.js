@@ -10,6 +10,7 @@ const IteratoService = (function () {
     let focused_conversation = true;
     let questionCounter = 0;
     let maxQuestions = 3; 
+    let firstPromptTimeout = 6000;
 
     const createToastStyles = function () {
         const style = document.createElement('style');
@@ -1245,8 +1246,17 @@ const IteratoService = (function () {
 
             if ('question_count' in toast_config && typeof toast_config.question_count === 'number') {
                 maxQuestions = Math.max(2, Math.min(7, toast_config.question_count));
-                console.log('IteratoService: question_count set to:', maxQuestions);
+            }else{
+                maxQuestions = 3;
             }
+            console.log('IteratoService: question_count set to:', maxQuestions);
+
+            if ('first_prompt_timeout' in toast_config && typeof toast_config.first_prompt_timeout === 'number') {
+                firstPromptTimeout = Math.max(2500, Math.min(60000, toast_config.first_prompt_timeout));
+            } else {
+                firstPromptTimeout = 6000;
+            }
+            console.log('IteratoService: firstPromptTimeout set to:', firstPromptTimeout);
 
             // Any other properties in toast_config are simply ignored
         }
@@ -1297,7 +1307,7 @@ const IteratoService = (function () {
                                 }
                             }, 500);
                         }
-                    }, 3500);
+                    }, firstPromptTimeout);
                     return true;
                 } else {
                     console.error('IteratoService: Event verification failed:', { statusCode, data });
