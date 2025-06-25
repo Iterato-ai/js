@@ -9,15 +9,14 @@ const IteratoService = (function () {
     let ask_if_negetive = true;
     let focused_conversation = true;
     let questionCounter = 0;
-    let maxQuestions = 3; 
+    let maxQuestions = 3;
     let firstPromptTimeout = 6000;
 
     const createToastStyles = function () {
         const style = document.createElement('style');
         style.textContent = `
-                        @import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100..900&display=swap');
 
-                        .toast-notification {
+                        .iterato-ai-toast {
                             position: fixed;
                             bottom: -100px;
                             left: 50%;
@@ -34,18 +33,16 @@ const IteratoService = (function () {
                             width: 400px;
                             box-sizing: border-box;
                             text-align: center;
-                            font-family: 'Lexend Deca', sans-serif;
-                            font-optical-sizing: auto;
                             font-style: normal;
                             font-size: 0.95rem;
                             font-weight: 300;
                             }
 
-                        .toast-notification button {
+                        .iterato-ai-toast button {
                             margin: 0;
                         }
 
-                        .toast-notification p {
+                        .iterato-ai-toast p {
                             margin: 0;
                         }
                         
@@ -86,7 +83,7 @@ const IteratoService = (function () {
                         }
 
                         @media screen and (max-width: 480px) {
-                            .toast-notification {
+                            .iterato-ai-toast {
                                 max-width: 96vw;
                                 min-width: 96vw;
                                 width: 90%;
@@ -98,18 +95,18 @@ const IteratoService = (function () {
                             }
                         }
                         
-                        .toast-notification.show {
+                        .iterato-ai-toast.show {
                             opacity: 1;
                             bottom: 30px;
                         }
 
                         @media screen and (max-width: 480px) {
-                            .toast-notification.show {
+                            .iterato-ai-toast.show {
                                 bottom: 0;
                             }
                         }
 
-                        .toast-notification.hide {
+                        .iterato-ai-toast.hide {
                             opacity: 0;
                             bottom: -100px;
                         }
@@ -181,7 +178,7 @@ const IteratoService = (function () {
     const createToast = function (id, message, hasButtons = false, hasFeedbackOptions = false, hasFeedbackInput = false) {
         const toast = document.createElement('div');
         toast.id = id;
-        toast.className = 'toast-notification';
+        toast.className = 'iterato-ai-toast';
 
         if (hasFeedbackOptions || hasFeedbackInput) {
             const closeButton = document.createElement('button');
@@ -202,7 +199,7 @@ const IteratoService = (function () {
 
                 removeOverlay();
 
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
                 setTimeout(() => {
                     if (toast.parentNode) {
                         toast.parentNode.removeChild(toast);
@@ -235,7 +232,7 @@ const IteratoService = (function () {
             noButton.style.padding = '8px 16px';
             noButton.style.borderRadius = '4px';
             noButton.onclick = function () {
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
                 setTimeout(() => {
                     if (toast.parentNode) {
                         toast.parentNode.removeChild(toast);
@@ -253,7 +250,7 @@ const IteratoService = (function () {
             yesButton.style.padding = '8px 16px';
             yesButton.style.borderRadius = '40px';
             yesButton.onclick = function () {
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
                 setTimeout(() => {
                     if (toast.parentNode) {
                         toast.parentNode.removeChild(toast);
@@ -285,6 +282,7 @@ const IteratoService = (function () {
             feedbackInput.style.boxSizing = 'border-box';
             feedbackInput.style.color = '#ffffff';
             feedbackInput.style.minWidth = '0';
+            feedbackInput.disabled = true;
 
             const submitButton = document.createElement('button');
             submitButton.textContent = 'Submit Feedback';
@@ -294,12 +292,15 @@ const IteratoService = (function () {
             submitButton.style.padding = '8px 16px';
             submitButton.style.borderRadius = '4px';
             submitButton.style.cursor = 'pointer';
+            submitButton.disabled = true;
             submitButton.onclick = async function () {
                 const userResponse = feedbackInput.value;
                 if (!userResponse.trim()) return;
 
                 addUserMessage(userResponse);
                 feedbackInput.value = '';
+                feedbackInput.disabled = true;
+                submitButton.disabled = true;
 
                 // Create bot message with loading animation immediately
                 const botMessageElement = addBotMessage("");
@@ -310,15 +311,16 @@ const IteratoService = (function () {
                 if (data.continueChat === false) {
                     // Replace loading animation with thank you message
                     botMessageElement.innerHTML = '';
-                    typeWriter(botMessageElement, "Thank you for sharing your feedback!");
-
-                    feedbackInput.disabled = true;
-                    submitButton.disabled = true;
-                    submitButton.style.backgroundColor = '#dddddd';
+                    typeWriter(botMessageElement, "Thank you for sharing your feedback!", 0, 30, () => {
+                        feedbackInput.disabled = false;
+                        submitButton.disabled = false;
+                        feedbackInput.focus();
+                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                    });
 
                     setTimeout(async () => {
                         await removeOverlay();
-                        toast.className = 'toast-notification hide';
+                        toast.className = 'iterato-ai-toast hide';
                         setTimeout(() => {
                             if (toast.parentNode) {
                                 toast.parentNode.removeChild(toast);
@@ -326,12 +328,15 @@ const IteratoService = (function () {
                         }, 500);
                     }, 3000);
 
-
-
                 } else if (data.question) {
                     // Replace loading animation with the actual question
                     botMessageElement.innerHTML = '';
-                    typeWriter(botMessageElement, data.question);
+                    typeWriter(botMessageElement, data.question, 0, 30, () => {
+                        feedbackInput.disabled = false;
+                        submitButton.disabled = false;
+                        feedbackInput.focus();
+                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                    });
                 }
             };
 
@@ -354,7 +359,7 @@ const IteratoService = (function () {
             dislikeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 21.008a3 3 0 0 0 2.995 -2.823l.005 -.177v-4h2a3 3 0 0 0 2.98 -2.65l.015 -.173l.005 -.177l-.02 -.196l-1.006 -5.032c-.381 -1.625 -1.502 -2.796 -2.81 -2.78l-.164 .008h-8a1 1 0 0 0 -.993 .884l-.007 .116l.001 9.536a1 1 0 0 0 .5 .866a2.998 2.998 0 0 1 1.492 2.396l.007 .202v1a3 3 0 0 0 3 3z" /><path d="M5 14.008a1 1 0 0 0 .993 -.883l.007 -.117v-9a1 1 0 0 0 -.883 -.993l-.117 -.007h-1a2 2 0 0 0 -1.995 1.852l-.005 .15v7a2 2 0 0 0 1.85 1.994l.15 .005h1z" /></svg>';
             dislikeButton.onclick = function () {
                 // Close the toast immediately
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
 
                 setTimeout(() => {
                     if (toast.parentNode) {
@@ -390,7 +395,7 @@ const IteratoService = (function () {
             likeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" /><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" /></svg>';
             likeButton.onclick = function () {
                 // Close the toast immediately
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
 
                 setTimeout(() => {
                     if (toast.parentNode) {
@@ -438,9 +443,9 @@ const IteratoService = (function () {
             let firstToast;
 
             try {
-                firstToast = document.querySelector('.toast-notification');
+                firstToast = document.querySelector('.iterato-ai-toast');
                 if (firstToast) {
-                    firstToast.className = 'toast-notification hide';
+                    firstToast.className = 'iterato-ai-toast hide';
                 }
                 if (firstToast && firstToast.parentNode) {
                     firstToast.parentNode.removeChild(firstToast);
@@ -471,7 +476,7 @@ const IteratoService = (function () {
             noButton.style.width = 'fit-content';
             noButton.style.borderRadius = '4px';
             noButton.onclick = function () {
-                newToast.className = 'toast-notification hide';
+                newToast.className = 'iterato-ai-toast hide';
                 setTimeout(() => {
                     if (newToast.parentNode) {
                         newToast.parentNode.removeChild(newToast);
@@ -489,7 +494,7 @@ const IteratoService = (function () {
             yesButton.style.padding = '8px 16px';
             yesButton.style.borderRadius = '40px';
             yesButton.onclick = function () {
-                newToast.className = 'toast-notification hide';
+                newToast.className = 'iterato-ai-toast hide';
                 setTimeout(() => {
                     if (newToast.parentNode) {
                         newToast.parentNode.removeChild(newToast);
@@ -561,11 +566,13 @@ const IteratoService = (function () {
 
         chatContainer.appendChild(firstBotMessage);
 
-        function typeWriter(element, text, i = 0, speed = 30) {
+        function typeWriter(element, text, i = 0, speed = 30, onComplete) {
             if (i < text.length) {
                 element.textContent += text.charAt(i);
                 i++;
-                setTimeout(() => typeWriter(element, text, i, speed), speed);
+                setTimeout(() => typeWriter(element, text, i, speed, onComplete), speed);
+            } else if (typeof onComplete === 'function') {
+                onComplete();
             }
         }
 
@@ -597,7 +604,6 @@ const IteratoService = (function () {
                     };
                 }
 
-                console.log("Collecting Feedback. feedbackId:" + feedbackId);
                 const response = await fetch('https://iterato-api.unlink-at.workers.dev/talkwithAIPM', {
                     method: 'POST',
                     headers: {
@@ -672,7 +678,12 @@ const IteratoService = (function () {
             // Start typing effect after a small delay
             setTimeout(() => {
                 loadingIndicator.remove();
-                typeWriter(botMessage, text);
+                typeWriter(botMessage, text, 0, 30, () => {
+                    feedbackInput.disabled = false;
+                    submitButton.disabled = false;
+                    feedbackInput.focus();
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                });
 
                 // Ensure we scroll to the bottom as the message is being typed
                 const scrollInterval = setInterval(() => {
@@ -738,6 +749,7 @@ const IteratoService = (function () {
         feedbackInput.style.color = '#ffffff';
         feedbackInput.style.backgroundColor = '#28282b'; // Updated background color
         feedbackInput.style.minWidth = '0';
+        feedbackInput.disabled = true;
 
         const submitButton = document.createElement('button');
         submitButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M18 11l-6 -6" /><path d="M6 11l6 -6" /></svg>';
@@ -753,6 +765,7 @@ const IteratoService = (function () {
         submitButton.style.justifyContent = 'center';
         submitButton.style.padding = '0';
         submitButton.style.minWidth = '40px';
+        submitButton.disabled = true;
 
         const closeButton = document.createElement('button');
         closeButton.textContent = 'Close Chat';
@@ -768,7 +781,7 @@ const IteratoService = (function () {
 
         closeButton.onclick = function () {
             removeOverlay();
-            toast.className = 'toast-notification hide';
+            toast.className = 'iterato-ai-toast hide';
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.parentNode.removeChild(toast);
@@ -788,7 +801,12 @@ const IteratoService = (function () {
             if (data.question) {
                 // Remove loading indicator before typing the message
                 firstBotMessage.innerHTML = '';
-                typeWriter(firstBotMessage, data.question);
+                typeWriter(firstBotMessage, data.question, 0, 30, () => {
+                    feedbackInput.disabled = false;
+                    submitButton.disabled = false;
+                    feedbackInput.focus();
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                });
                 // Scroll to the bottom after the question is loaded
                 setTimeout(() => {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -796,7 +814,12 @@ const IteratoService = (function () {
             } else {
                 // Remove loading indicator before typing the message
                 firstBotMessage.innerHTML = '';
-                typeWriter(firstBotMessage, "What could we have done better?");
+                typeWriter(firstBotMessage, "What could we have done better?", 0, 30, () => {
+                    feedbackInput.disabled = false;
+                    submitButton.disabled = false;
+                    feedbackInput.focus();
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                });
                 // Scroll to the bottom after the question is loaded
                 setTimeout(() => {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -809,24 +832,21 @@ const IteratoService = (function () {
             if (!userResponse.trim()) return;
 
             addUserMessage(userResponse);
-
             feedbackInput.value = '';
-
-            questionCount++;
+            feedbackInput.disabled = true;
+            submitButton.disabled = true;
 
             const data = await fetchNextQuestion(userResponse);
 
             if (data.continueChat === false) {
-
                 addBotMessage("Thank you for sharing your feedback!");
-
-                feedbackInput.disabled = true;
+                // input stays disabled
                 submitButton.disabled = true;
-                submitButton.style.backgroundColor = '#dddddd';
+                feedbackInput.disabled = true;
 
                 setTimeout(() => {
                     removeOverlay();
-                    toast.className = 'toast-notification hide';
+                    toast.className = 'iterato-ai-toast hide';
                     setTimeout(() => {
                         if (toast.parentNode) {
                             toast.parentNode.removeChild(toast);
@@ -834,8 +854,14 @@ const IteratoService = (function () {
                     }, 500);
                 }, 3000);
             } else if (data.question) {
-
-                addBotMessage(data.question);
+                // Use the new typeWriter with callback to re-enable input
+                const botMessageElement = addBotMessage("");
+                typeWriter(botMessageElement, data.question, 0, 30, () => {
+                    feedbackInput.disabled = false;
+                    submitButton.disabled = false;
+                    feedbackInput.focus();
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+                });
             }
         };
 
@@ -886,7 +912,7 @@ const IteratoService = (function () {
             const secondAnswer = feedbackInput.value;
             console.log('Second feedback submitted:', secondAnswer);
 
-            toast.className = 'toast-notification hide';
+            toast.className = 'iterato-ai-toast hide';
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.parentNode.removeChild(toast);
@@ -906,7 +932,7 @@ const IteratoService = (function () {
 
             removeOverlay();
 
-            toast.className = 'toast-notification hide';
+            toast.className = 'iterato-ai-toast hide';
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.parentNode.removeChild(toast);
@@ -927,9 +953,9 @@ const IteratoService = (function () {
         let firstToast;
 
         try {
-            firstToast = document.querySelector('.toast-notification');
+            firstToast = document.querySelector('.iterato-ai-toast');
             if (firstToast) {
-                firstToast.className = 'toast-notification hide';
+                firstToast.className = 'iterato-ai-toast hide';
             }
         } catch (error) {
             console.error('Error removing first toast:', error);
@@ -947,13 +973,79 @@ const IteratoService = (function () {
         }, 100);
     };
 
-    let oldLog = console.log;
     let collectedLogs = [];
-
+    let oldLog = console.log;
+    let oldError = console.error;
+    let oldWarn = console.warn;
+    let oldDebug = console.debug;
     // Function to generate a universally unique ID for feedback
     const generateFeedbackId = function () {
         return Date.now().toString() + Math.random().toString(36).substring(2, 15);
     };
+
+    function formatLog(level, args) {
+        // Format timestamp: DD-MMM HH:MM:SS GMT
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        const timestamp = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} GMT`;
+
+        // Format arguments - Fixed object stringification
+        const formattedArgs = Array.from(args).map(arg => {
+            if (Array.isArray(arg)) {
+                return JSON.stringify(arg, null, 2);
+            }
+            if (arg instanceof Map) {
+                return `Map(${arg.size}) ${JSON.stringify(Array.from(arg.entries()), null, 2)}`;
+            }
+            if (arg instanceof Set) {
+                return `Set(${arg.size}) ${JSON.stringify(Array.from(arg.values()), null, 2)}`;
+            }
+            if (typeof arg === 'object' && arg !== null) {
+                try {
+                    const seen = new WeakSet();
+                    const replacer = (key, value) => {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular Reference]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    };
+                    return JSON.stringify(arg, replacer, 2);
+                } catch (e) {
+                    return '[Unserializable Object]';
+                }
+            }
+            return String(arg);
+        });
+
+        // Location extraction
+        let location = '';
+        try {
+            const err = new Error();
+            const stackLines = err.stack.split('\n');
+            for (let i = 2; i < stackLines.length; i++) {
+                const line = stackLines[i];
+                if (!line.includes('at console.') &&
+                    !line.includes('at Object.') &&
+                    !line.includes('at HTMLDocument')) {
+                    const match = line.match(/(?:at\s+|@)(?:\w+\s+\()?([^\s()]+):(\d+):(\d+)/i);
+                    if (match) {
+                        const filePath = match[1];
+                        const fileName = filePath.split('/').pop();
+                        location = `${fileName}:${match[2]}`;
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            // ignore stack trace error
+        }
+
+        return `${timestamp} ⸺ [${level.toUpperCase()}] ${location ? `[${location}]` : ''} ⸺ ${formattedArgs.join(' ')}`;
+    }
+
 
     // Function to get IP details
     const getIpDetails = async function () {
@@ -1050,13 +1142,33 @@ const IteratoService = (function () {
             viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
         }
 
+        // Apply interceptors
         try {
-            console.log = function (message) {
-                collectedLogs.push(Array.from(arguments));
-                oldLog.apply(console, arguments);
+            console.log = function (...args) {
+                const line = formatLog('log', args);
+                collectedLogs.push(line);
+                oldLog(line);
+            };
+
+            console.error = function (...args) {
+                const line = formatLog('error', args);
+                collectedLogs.push(line);
+                oldError(line);
+            };
+
+            console.warn = function (...args) {
+                const line = formatLog('warn', args);
+                collectedLogs.push(line);
+                oldWarn(line);
+            };
+
+            console.debug = function (...args) {
+                const line = formatLog('debug', args);
+                collectedLogs.push(line);
+                oldDebug(line);
             };
         } catch (error) {
-            console.error('Error setting up console.log interception:', error);
+            console.error('Error setting up console overrides:', error);
         }
 
         try {
@@ -1151,11 +1263,11 @@ const IteratoService = (function () {
 
         void toast.offsetWidth;
 
-        toast.className = 'toast-notification show';
+        toast.className = 'iterato-ai-toast show';
 
         if (autoHide) {
             setTimeout(function () {
-                toast.className = 'toast-notification hide';
+                toast.className = 'iterato-ai-toast hide';
 
                 removeOverlay();
 
@@ -1170,6 +1282,8 @@ const IteratoService = (function () {
         return true;
     };
     const collect = function (event_id, toast_config = {}) {
+
+
         if (!event_id) {
             console.error('IteratoService: Event ID is required for collect function');
             return false;
@@ -1246,7 +1360,7 @@ const IteratoService = (function () {
 
             if ('question_count' in toast_config && typeof toast_config.question_count === 'number') {
                 maxQuestions = Math.max(2, Math.min(7, toast_config.question_count));
-            }else{
+            } else {
                 maxQuestions = 3;
             }
             console.log('IteratoService: question_count set to:', maxQuestions);
@@ -1287,7 +1401,7 @@ const IteratoService = (function () {
             .then(({ statusCode, data }) => {
                 if (statusCode === 200 && data.result === "TRUE") {
                     // Proceed with showing the toast - preserving original functionality
-                    const existingToasts = document.querySelectorAll('.toast-notification');
+                    const existingToasts = document.querySelectorAll('.iterato-ai-toast');
                     existingToasts.forEach(toast => {
                         if (toast.parentNode) {
                             toast.parentNode.removeChild(toast);
@@ -1300,7 +1414,7 @@ const IteratoService = (function () {
                     setTimeout(function () {
                         const toast = document.getElementById(firstToastId);
                         if (toast && toast.parentNode) {
-                            toast.className = 'toast-notification hide';
+                            toast.className = 'iterato-ai-toast hide';
                             setTimeout(() => {
                                 if (toast.parentNode) {
                                     toast.parentNode.removeChild(toast);
