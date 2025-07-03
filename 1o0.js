@@ -1,16 +1,19 @@
 const IteratoService = (function () {
     // Add a global variable for feedback ID
     let feedbackId = '';
+    let questionCounter = 0;
+
     let chatHistory = [];
     let fdbk_tags = [];
     let msg_first_toast = "How was your experience?";
-    let msg_2nd_toast = "We will try to do better! Would you like to share more feedback?"
+    let msg_2nd_toast = "Would you like to share more feedback?"
     let ask_if_positive = false;
+    let ask_if_neutral = true;
     let ask_if_negetive = true;
     let focused_conversation = true;
-    let questionCounter = 0;
     let maxQuestions = 3;
     let firstPromptTimeout = 6000;
+    let reaction_type = "smiley";
 
     const createToastStyles = function () {
         const style = document.createElement('style');
@@ -114,7 +117,6 @@ const IteratoService = (function () {
                         .toast-button {
                             padding: 8px 16px;
                             margin: 0 !important;
-                            background-color: #efefef;
                             color: #000;
                             border: none;
                             border-radius: 100px;
@@ -129,10 +131,19 @@ const IteratoService = (function () {
                             width: 40px;
                             height: 40px;
                             padding: 0;
+                            background-color: rgba(0,0,0,0.10);
                         }
 
-                        .toast-button:hover {
-                            background-color: #ededed;
+                        .toast-button-positive{
+                            color: #67BD57;
+                        }
+
+                        .toast-button-negetive{
+                            color: #FF857F;
+                        }
+
+                        .toast-button-neutral{
+                            color: #7FB0EF;
                         }
 
                         .toast-feedback-button {
@@ -355,8 +366,14 @@ const IteratoService = (function () {
             buttonContainer.style.marginTop = '10px';
 
             const dislikeButton = document.createElement('button');
-            dislikeButton.className = 'toast-button';
-            dislikeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 21.008a3 3 0 0 0 2.995 -2.823l.005 -.177v-4h2a3 3 0 0 0 2.98 -2.65l.015 -.173l.005 -.177l-.02 -.196l-1.006 -5.032c-.381 -1.625 -1.502 -2.796 -2.81 -2.78l-.164 .008h-8a1 1 0 0 0 -.993 .884l-.007 .116l.001 9.536a1 1 0 0 0 .5 .866a2.998 2.998 0 0 1 1.492 2.396l.007 .202v1a3 3 0 0 0 3 3z" /><path d="M5 14.008a1 1 0 0 0 .993 -.883l.007 -.117v-9a1 1 0 0 0 -.883 -.993l-.117 -.007h-1a2 2 0 0 0 -1.995 1.852l-.005 .15v7a2 2 0 0 0 1.85 1.994l.15 .005h1z" /></svg>';
+            dislikeButton.className = 'toast-button toast-button-negetive';
+            if (reaction_type === "smiley") {
+                dislikeButton.innerHTML = '<svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="36"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-mood-sad"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-5 9.86a4.5 4.5 0 0 0 -3.214 1.35a1 1 0 1 0 1.428 1.4a2.5 2.5 0 0 1 3.572 0a1 1 0 0 0 1.428 -1.4a4.5 4.5 0 0 0 -3.214 -1.35zm-2.99 -4.2l-.127 .007a1 1 0 0 0 0 1.986l.117 .007l.127 -.007a1 1 0 0 0 0 -1.986l-.117 -.007zm6 0l-.127 .007a1 1 0 0 0 0 1.986l.117 .007l.127 -.007a1 1 0 0 0 0 -1.986l-.117 -.007z" /></svg>';
+
+            } else {
+                dislikeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 21.008a3 3 0 0 0 2.995 -2.823l.005 -.177v-4h2a3 3 0 0 0 2.98 -2.65l.015 -.173l.005 -.177l-.02 -.196l-1.006 -5.032c-.381 -1.625 -1.502 -2.796 -2.81 -2.78l-.164 .008h-8a1 1 0 0 0 -.993 .884l-.007 .116l.001 9.536a1 1 0 0 0 .5 .866a2.998 2.998 0 0 1 1.492 2.396l.007 .202v1a3 3 0 0 0 3 3z" /><path d="M5 14.008a1 1 0 0 0 .993 -.883l.007 -.117v-9a1 1 0 0 0 -.883 -.993l-.117 -.007h-1a2 2 0 0 0 -1.995 1.852l-.005 .15v7a2 2 0 0 0 1.85 1.994l.15 .005h1z" /></svg>';
+
+            }
             dislikeButton.onclick = function () {
                 // Close the toast immediately
                 toast.className = 'iterato-ai-toast hide';
@@ -390,9 +407,58 @@ const IteratoService = (function () {
                 }, 500);
             };
 
+            const neutralButton = document.createElement('button');
+            neutralButton.className = 'toast-button toast-button-neutral';
+            if (reaction_type === "smiley") {
+                neutralButton.innerHTML = '<svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="36"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-mood-smile"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.8 10.946a1 1 0 0 0 -1.414 .014a2.5 2.5 0 0 1 -3.572 0a1 1 0 0 0 -1.428 1.4a4.5 4.5 0 0 0 6.428 0a1 1 0 0 0 -.014 -1.414zm-6.19 -5.286l-.127 .007a1 1 0 0 0 .117 1.993l.127 -.007a1 1 0 0 0 -.117 -1.993zm6 0l-.127 .007a1 1 0 0 0 .117 1.993l.127 -.007a1 1 0 0 0 -.117 -1.993z" /></svg>';
+
+            } else {
+                neutralButton.innerHTML = '<svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="36"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" /></svg>';
+            }
+
+            neutralButton.onclick = function () {
+                // Close the toast immediately
+                toast.className = 'iterato-ai-toast hide';
+
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+
+                    // Send API request and wait for response
+                    sendFeedbackToAPI('neutral').then(response => {
+                        // Check if response is successful
+                        if (response && response.statusCode === 200 && response.result === true) {
+                            // Show thanks toast
+                            if (ask_if_neutral) {
+                                showFeedbackOptionsToast();
+
+                            } else {
+                                showNextToast('Thank you for the feedback!');
+                            }
+                        } else {
+                            // Show generic thanks toast
+                            console.log('Like! neutral');
+
+                            showNextToast('Thank you for your feedback!');
+                        }
+                    }).catch(error => {
+                        console.error('Error sending feedback:', error);
+                        // Show generic thanks toast on error
+                        showNextToast('Thanks for your feedback!');
+                    });
+                }, 500);
+            };
+
             const likeButton = document.createElement('button');
-            likeButton.className = 'toast-button';
-            likeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" /><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" /></svg>';
+            likeButton.className = 'toast-button toast-button-positive';
+            if (reaction_type === "smiley") {
+                likeButton.innerHTML = '<svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="36"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-mood-happy"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-2 9.66h-6a1 1 0 0 0 -1 1v.05a3.975 3.975 0 0 0 3.777 3.97l.227 .005a4.026 4.026 0 0 0 3.99 -3.79l.006 -.206a1 1 0 0 0 -1 -1.029zm-5.99 -5l-.127 .007a1 1 0 0 0 .117 1.993l.127 -.007a1 1 0 0 0 -.117 -1.993zm6 0l-.127 .007a1 1 0 0 0 .117 1.993l.127 -.007a1 1 0 0 0 -.117 -1.993z" /></svg>';
+
+            } else {
+                likeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-thumb-up"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" /><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" /></svg>';
+            }
+
             likeButton.onclick = function () {
                 // Close the toast immediately
                 toast.className = 'iterato-ai-toast hide';
@@ -428,6 +494,9 @@ const IteratoService = (function () {
             };
 
             buttonContainer.appendChild(dislikeButton);
+            if (reaction_type === "smiley") {
+                buttonContainer.appendChild(neutralButton);
+            }
             buttonContainer.appendChild(likeButton);
 
             toast.appendChild(buttonContainer);
@@ -614,6 +683,7 @@ const IteratoService = (function () {
                         event_id: window._iteratoEventId,
                         fdbk_id: feedbackId,
                         domain: getDomain(),
+                        reaction_type: reaction_type,
                         reaction: 'negative',
                         conversation: chatHistory || [],
                         need_quest: true,
@@ -1092,7 +1162,8 @@ const IteratoService = (function () {
                 event_id: window._iteratoEventId,
                 fdbk_id: feedbackId,
                 domain: getDomain(),
-                reaction: reaction, // 'positive' or 'negative'
+                reaction_type: reaction_type,
+                reaction: reaction,
                 user_info: window.it_setUserInfo || {},
                 conversation: {},
                 ip_details: ipDetails,
@@ -1315,7 +1386,7 @@ const IteratoService = (function () {
                     ask_if_positive = toast_config.followup_if_positive;
                 } else {
                     console.warn('IteratoService: followup_if_positive should be a boolean, ignoring invalid value');
-                    followup_if_negative = false;
+                    ask_if_positive = false;
 
                 }
             }
@@ -1326,9 +1397,20 @@ const IteratoService = (function () {
                     ask_if_negetive = toast_config.followup_if_negative;
                 } else {
                     console.warn('IteratoService: followup_if_negative should be a boolean, ignoring invalid value');
-                    followup_if_negative = true;
+                    ask_if_negetive = true;
                 }
             }
+
+             if ('followup_if_neutral' in toast_config) {
+                if (typeof toast_config.followup_if_neutral === 'boolean') {
+                    ask_if_neutral = toast_config.followup_if_neutral;
+                } else {
+                    console.warn('IteratoService: followup_if_neutral should be a boolean, ignoring invalid value');
+                    ask_if_neutral = true;
+                }
+            }
+
+
 
             // Process followup_if_negative if provided
             if ('focused_chat' in toast_config) {
@@ -1371,6 +1453,14 @@ const IteratoService = (function () {
                 firstPromptTimeout = 6000;
             }
             console.log('IteratoService: firstPromptTimeout set to:', firstPromptTimeout);
+
+
+            if ('reaction_type' in toast_config && typeof toast_config.reaction_type === 'string' && (toast_config.reaction_type === "smiley" || toast_config.reaction_type === "thumb")) {
+                reaction_type = toast_config.reaction_type;
+            } else {
+                reaction_type = "smiley";
+            }
+            console.log('IteratoService: reaction_type set to:', reaction_type);
 
             // Any other properties in toast_config are simply ignored
         }
